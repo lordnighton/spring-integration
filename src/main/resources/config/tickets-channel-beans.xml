@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:context="http://www.springframework.org/schema/context"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                  http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/integration
+                  http://www.springframework.org/schema/integration/spring-integration.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.spring.integration.handlers" />
+
+    <beans:bean id="ticketReceiver" class="com.spring.integration.handlers.TicketReceiver">
+        <beans:property name="timeout" value="1000" />
+        <beans:property name="channel" ref="ticketChannel" />
+    </beans:bean>
+
+    <beans:bean id="ticketFactory" class="com.spring.integration.services.TicketFactory" />
+    <beans:bean id="ticketProducer" class="com.spring.integration.services.TicketProducer">
+        <beans:property name="ticketFactory" ref="ticketFactory" />
+        <beans:property name="channel" ref="ticketChannel" />
+    </beans:bean>
+
+    <channel id="ticketChannel" datatype="com.spring.integration.domain.Ticket">
+        <queue capacity="5"/>
+    </channel>
+
+</beans:beans>
