@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:context="http://www.springframework.org/schema/context"
+             xmlns:jms="http://www.springframework.org/schema/integration/jms"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+             http://www.springframework.org/schema/beans/spring-beans.xsd
+             http://www.springframework.org/schema/integration/jms
+             http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+                  http://www.springframework.org/schema/integration
+                  http://www.springframework.org/schema/integration/spring-integration.xsd
+                  http://www.springframework.org/schema/context
+                  http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.spring.integration" />
+
+    <beans:bean id="objectToJsonTransformer" class="org.springframework.integration.json.ObjectToJsonTransformer" />
+
+    <jms:message-driven-channel-adapter
+            channel="mapChannel"
+            extract-payload="true"
+            connection-factory="cachingConnectionFactory"
+            destination-name="channel-spring-integration"/>
+
+    <map-to-object-transformer input-channel="mapChannel"
+                               output-channel="jsonChannel"
+                               type="com.spring.integration.domain.Customer"/>
+
+    <transformer input-channel="jsonChannel"
+                 output-channel="outputChannel"
+                 ref="objectToJsonTransformer"/>
+
+    <channel id="mapChannel">
+        <interceptors>
+            <wire-tap channel="logger" />
+        </interceptors>
+    </channel>
+
+    <channel id="jsonChannel">
+        <interceptors>
+            <wire-tap channel="logger" />
+        </interceptors>
+    </channel>
+
+    <channel id="outputChannel">
+        <queue capacity="10" />
+    </channel>
+
+    <logging-channel-adapter id="logger" log-full-message="true" level="INFO" />
+
+    <beans:bean id="jmsQueueConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <beans:property name="brokerURL" value="tcp://localhost:61616" />
+    </beans:bean>
+
+    <beans:bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <beans:property name="connectionFactory" ref="cachingConnectionFactory" />
+        <beans:property name="defaultDestinationName" value="channel-spring-integration" />
+    </beans:bean>
+
+    <beans:bean id="cachingConnectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+        <beans:property name="targetConnectionFactory" ref="jmsQueueConnectionFactory" />
+        <beans:property name="sessionCacheSize" value="50" />
+        <beans:property name="cacheProducers" value="false" />
+    </beans:bean>
+
+    <beans:bean id="broker" class="org.apache.activemq.broker.BrokerService">
+        <beans:property name="persistent" value="false" />
+    </beans:bean>
+
+</beans:beans>
